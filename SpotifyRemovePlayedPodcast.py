@@ -9,7 +9,8 @@ import spotipy
 ID = "123"
 SECRET = "123"
 username = "name"
-scope = "playlist-modify-public playlist-modify-private"
+scope = "user-read-playback-position playlist-modify-public playlist-modify-private"
+
 
 def read_secret():
     with open('secret.json') as json_file:
@@ -35,7 +36,7 @@ def get_playlist(sp):
 
     for playlist in playlists['items']:
         sp_playlist_name.append(playlist['name'])
-        sp_playlist_id.append(playlist['uri'])
+        sp_playlist_id.append(playlist['id'])
 
     # Select the playlist
     i = 0
@@ -46,6 +47,23 @@ def get_playlist(sp):
     select_list = input("Select the playlist to use: ")
 
     return sp_playlist_id[int(select_list)]
+
+def episode_played(sp, playlist_id, episodes):
+    episodes_to_remove = []
+
+    for episode in episodes['items']:
+        episode_id = episode['track']['uri']
+
+        r = sp.episode(episode_id)
+        played = r['resume_point']['fully_played']
+        
+        if (played == True):
+            episodes_to_remove.append(episode_id)
+            
+    #print(episodes_to_remove)
+    sp.playlist_remove_all_occurrences_of_items(playlist_id, episodes_to_remove)
+
+    return
 
 if __name__ == '__main__':
     json_secret = read_secret()
@@ -59,9 +77,9 @@ if __name__ == '__main__':
     # Get all of the available playlists
     ava_playlists = get_playlist(sp)
 
+    # Get the tracks in the playlist
     results = sp.playlist_items(ava_playlists)
-    episode_id = results['items'][0]['track']['id']
+    #print (json.dumps(results, indent=4))
     
-    print(episode_id)
+    episode_played(sp, ava_playlists, results)
 
-    print(json.dumps(sp.episode(episode_id), indent=4))
